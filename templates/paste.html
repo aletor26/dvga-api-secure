@@ -40,6 +40,16 @@
       ERROR: 'error',
       COMPLETE: 'complete'
     }
+    // filepath: Damn-Vulnerable-GraphQL-Application/templates/paste.html
+    function escapeHTML(str) {
+      if (typeof str !== 'string') return str;
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
 
     function subscribeToPastes() {
 
@@ -61,17 +71,16 @@
           data = JSON.parse(event.data)
           paste = data.payload.data.paste
 
-
-          var pasteHTML = `<div class="card-header">
-              <i class="fa fa-paste"></i> &nbsp; ${paste.title}
-            </div>
-            <div class="card-body">
-              <p class="card-text">
-              <pre>${paste.content}</pre>
-              <br><hr />
-              <i class="fa fa-user"></i>
-              <i><small><b>${paste.owner.name}</b><br>- ${paste.ipAddr}<br>- (${paste.userAgent})</small></i></p>
-            </div>`
+        var pasteHTML = `<div class="card-header">
+          <i class="fa fa-paste"></i> &nbsp; ${escapeHTML(paste.title)}
+        </div>
+        <div class="card-body">
+          <p class="card-text">
+          <pre>${escapeHTML(paste.content)}</pre>
+          <br><hr />
+          <i class="fa fa-user"></i>
+          <i><small><b>${escapeHTML(paste.owner.name)}</b><br>- ${escapeHTML(paste.ipAddr)}<br>- (${escapeHTML(paste.userAgent)})</small></i></p>
+        </div>`
 
           if(paste.public){
             $(pasteHTML).hide().prependTo("#public_gallery").fadeIn(1000);
@@ -131,27 +140,27 @@
             if(page_public){
               $("#public_gallery").append(
                 `<div class="card-header">
-                  <i class="fa fa-paste"></i> &nbsp; ${title}
+                  <i class="fa fa-paste"></i> &nbsp; ${escapeHTML(title)}
                 </div>
                 <div class="card-body">
                   <p class="card-text">
-                  <pre>${content}</pre>
+                  <pre>${escapeHTML(content)}</pre>
                   <br><hr />
                   <i class="fa fa-user"></i>
-                  <i><small><b>${owner}</b><br>- ${ip_addr}<br>- (${uas})</small></i></p>
+                  <i><small><b>${escapeHTML(owner)}</b><br>- ${escapeHTML(ip_addr)}<br>- (${escapeHTML(uas)})</small></i></p>
                 </div>`
               )
             } else {
-              $("#private_gallery").append(
+              $("#public_gallery").append(
                 `<div class="card-header">
-                  <i class="fa fa-paste"></i> &nbsp; ${title}
+                  <i class="fa fa-paste"></i> &nbsp; ${escapeHTML(title)}
                 </div>
                 <div class="card-body">
                   <p class="card-text">
-                  <pre>${content}</pre>
+                  <pre>${escapeHTML(content)}</pre>
                   <br><hr />
                   <i class="fa fa-user"></i>
-                  <i><small><b>${owner}</b><br>- ${ip_addr}<br>- (${uas})</small></i></p>
+                  <i><small><b>${escapeHTML(owner)}</b><br>- ${escapeHTML(ip_addr)}<br>- (${escapeHTML(uas)})</small></i></p>
                 </div>`
               )
             }
