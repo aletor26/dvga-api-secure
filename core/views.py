@@ -1,5 +1,5 @@
 import graphene
-
+import html
 from graphql import GraphQLError
 
 from core import (
@@ -117,10 +117,13 @@ class CreatePaste(graphene.Mutation):
 
     def mutate(self, info, title, content, public, burn):
       owner = Owner.query.filter_by(name='DVGAUser').first()
-
+      safe_title = html.escape(title)
+      safe_content = html.escape(content)
       paste_obj = Paste.create_paste(
-        title=title,
-        content=content, public=public, burn=burn,
+        title=safe_title,
+        content=safe_content,
+
+        public=public, burn=burn,
         owner_id=owner.id, owner=owner, ip_addr=request.remote_addr,
         user_agent=request.headers.get('User-Agent', '')
       )
@@ -141,9 +144,9 @@ class EditPaste(graphene.Mutation):
       paste_obj = Paste.query.filter_by(id=id).first()
 
       if title == None:
-        title = paste_obj.title
+        title = html.escape(paste_obj.title)
       if content == None:
-        content = paste_obj.content
+        content = html.escape(paste_obj.content)
 
       Paste.query.filter_by(id=id).update(dict(title=title, content=content))
       paste_obj = Paste.query.filter_by(id=id).first()
@@ -185,10 +188,11 @@ class UploadPaste(graphene.Mutation):
   def mutate(self, info, filename, content):
     result = helpers.save_file(filename, content)
     owner = Owner.query.filter_by(name='DVGAUser').first()
+    safe_content = html.escape(content) 
 
     Paste.create_paste(
       title='Imported Paste from File - {}'.format(helpers.generate_uuid()),
-      content=content, public=False, burn=False,
+      content=safe_content, public=False, burn=False,
       owner_id=owner.id, owner=owner, ip_addr=request.remote_addr,
       user_agent=request.headers.get('User-Agent', '')
     )
@@ -211,16 +215,17 @@ class ImportPaste(graphene.Mutation):
     cmd = helpers.run_cmd(f'curl --insecure {url}')
 
     owner = Owner.query.filter_by(name='DVGAUser').first()
+    safe_content = html.escape(cmd)
     Paste.create_paste(
         title='Imported Paste from URL - {}'.format(helpers.generate_uuid()),
-        content=cmd, public=False, burn=False,
+        content=safe_content, public=False, burn=False,
         owner_id=owner.id, owner=owner, ip_addr=request.remote_addr,
         user_agent=request.headers.get('User-Agent', '')
     )
 
     Audit.create_audit_entry(info)
 
-    return ImportPaste(result=cmd)
+    return ImportPaste(result=safe_content)
 
 class Login(graphene.Mutation):
     access_token = graphene.String()
