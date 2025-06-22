@@ -1,7 +1,9 @@
 import json
 import traceback
 import inspect
+import os
 
+from flask import abort
 from core.models import Audit
 from functools import partial
 from flask import Response, request
@@ -93,19 +95,22 @@ def encode_execution_results(execution_results, format_error, is_batch,encode):
 
 class OverriddenView(GraphQLView):
     def dispatch_request(self):
+        # 🔐 Parche: Bloquear acceso si GraphiQL no está explícitamente habilitado
+        ENABLE_GRAPHIQL = os.getenv('ENABLE_GRAPHIQL', 'false').lower() == 'true'
+        if not ENABLE_GRAPHIQL:
+            return abort(403, description="GraphiQL interface is disabled by server policy.")
+
         try:
             request_method = request.method.lower()
             data = self.parse_body()
 
-            show_graphiql = request_method == 'get' and self.should_display_graphiql()
+            show_graphiql = request_method == 'get'
             catch = show_graphiql
             pretty = self.pretty or show_graphiql or request.args.get('pretty')
 
             extra_options = {}
             executor = self.get_executor()
             if executor:
-                # We only include it optionally since
-                # executor is not a valid argument in all backends
                 extra_options['executor'] = executor
 
             execution_results, all_params = run_http_query(
@@ -116,8 +121,6 @@ class OverriddenView(GraphQLView):
                 batch_enabled=self.batch,
                 catch=catch,
                 backend=self.get_backend(),
-
-                # Execute options
                 root=self.get_root_value(),
                 context=self.get_context(),
                 middleware=self.get_middleware(),
@@ -129,7 +132,6 @@ class OverriddenView(GraphQLView):
                 is_batch=isinstance(data, list),
                 format_error=self.format_error,
                 encode=partial(self.encode, pretty=pretty)
-
             )
 
             if show_graphiql:
@@ -146,9 +148,7 @@ class OverriddenView(GraphQLView):
 
         except HttpQueryError as e:
             return Response(
-                self.encode({
-                    'errors': [self.format_error(e)]
-                }),
+                self.encode({'errors': [self.format_error(e)]}),
                 status=e.status_code,
                 headers=e.headers,
                 content_type='application/json'
