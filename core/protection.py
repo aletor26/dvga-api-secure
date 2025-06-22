@@ -26,7 +26,7 @@ def get_fields_and_depth(query):
         return fields, max_depth
     except Exception:
         return [], 0
-
+           
 def graphql_protection():
     if request.path == "/graphql" and request.method == "POST":
         data = request.get_json(force=True)
@@ -37,6 +37,12 @@ def graphql_protection():
             queries = [q.get('query', '') for q in data]
         else:
             queries = [data.get('query', '')]
+
+        # --- AÑADE ESTE BLOQUE PARA BLOQUEAR INTROSPECCIÓN ---
+        for q in queries:
+            if "__schema" in q or "__type" in q:
+                return jsonify({"errors": [{"message": "400 Bad Request: Introspection is Disabled"}]}),  400
+        # -----------------------------------------------------
 
         for q in queries:
             fields, depth = get_fields_and_depth(q)
