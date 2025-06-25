@@ -6,6 +6,11 @@ MAX_BATCH_SIZE = 5
 MAX_DEPTH = 3
 MAX_FIELD_DUPLICATION = 2
 
+FIELD_COSTS = {
+    "systemUpdate": 10, 
+}
+MAX_TOTAL_COST = 5
+
 def get_fields_and_depth(query):
     try:
         ast = parse(query)
@@ -27,6 +32,14 @@ def get_fields_and_depth(query):
     except Exception:
         return [], 0
 
+def cost_exceeded(fields):
+    total_cost = 0
+    for field in fields:
+        total_cost += FIELD_COSTS.get(field, 1)  # Por defecto, cada campo cuesta 1
+        if total_cost > MAX_TOTAL_COST:
+            return True
+    return False
+
 def graphql_protection():
     if request.path == "/graphql" and request.method == "POST":
         data = request.get_json(force=True)
@@ -47,3 +60,6 @@ def graphql_protection():
             for field in set(fields):
                 if fields.count(field) > MAX_FIELD_DUPLICATION:
                     return jsonify({"error": f"Field '{field}' duplicated too many times."}), 429
+            # Cost check
+            if cost_exceeded(fields):
+                return jsonify({"error": "Query cost too high. One or more operations exceed the allowed weight."}), 430
