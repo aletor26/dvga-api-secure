@@ -95,9 +95,9 @@ def encode_execution_results(execution_results, format_error, is_batch,encode):
 
 class OverriddenView(GraphQLView):
     def dispatch_request(self):
-        # 🔐 Parche: Bloquear acceso si GraphiQL no está explícitamente habilitado
         ENABLE_GRAPHIQL = os.getenv('ENABLE_GRAPHIQL', 'false').lower() == 'true'
-        if not ENABLE_GRAPHIQL:
+
+        if request.method.lower() == 'get' and not ENABLE_GRAPHIQL:
             return abort(403, description="GraphiQL interface is disabled by server policy.")
 
         try:
