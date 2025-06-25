@@ -7,9 +7,9 @@ MAX_DEPTH = 3
 MAX_FIELD_DUPLICATION = 2
 
 FIELD_COSTS = {
-    "systemUpdate": 10, 
+    "systemUpdate": 50, 
 }
-MAX_TOTAL_COST = 5
+MAX_TOTAL_COST = 15
 
 def get_fields_and_depth(query):
     try:
